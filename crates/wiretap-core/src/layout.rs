@@ -360,6 +360,7 @@ fn parse_qualified_name(s: &str) -> Option<(String, String, String)> {
     Some((parts[0].to_string(), parts[1].to_string(), parts[2].to_string()))
 }
 
+#[cfg(test)]
 fn strip_0x(s: &str) -> &str {
     s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")).unwrap_or(s)
 }
