@@ -1,0 +1,22 @@
+# wiretap.toml — Sui gRPC event indexer config
+# Generate this in your project with: wiretap init
+
+[source]
+endpoint = "https://fullnode.testnet.sui.io:443"
+start_checkpoint = "latest"  # or a number, e.g. 12345678
+
+[[watch]]
+events = [
+    "0xPACKAGE::pool::SwapEvent",
+    "0xPACKAGE::pool::*",
+]
+# packages = ["0xPACKAGE"]
+# senders  = ["0xYOURADDR"]
+# affected = ["0xYOURADDR"]
+
+[sink]
+type = "sqlite"
+path = "events.db"
+
+[cursor]
+path = "wiretap.db"

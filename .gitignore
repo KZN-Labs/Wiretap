@@ -1,0 +1,12 @@
+target/
+**/*.rs.bk
+Cargo.lock.bak
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+events.db
+wiretap.toml.local
+.env
+.env.*
+!.env.example

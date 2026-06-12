@@ -1,0 +1,27 @@
+[package]
+name = "wiretap-sinks"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Sinks for wiretap: sqlite (default), postgres (feature), webhook, stdout."
+
+[features]
+default = ["sqlite", "webhook", "stdout"]
+sqlite = ["dep:rusqlite"]
+postgres = ["dep:sqlx"]
+webhook = ["dep:reqwest"]
+stdout = []
+
+[dependencies]
+wiretap-core = { path = "../wiretap-core" }
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+async-trait.workspace = true
+anyhow.workspace = true
+rusqlite = { workspace = true, optional = true }
+sqlx = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }

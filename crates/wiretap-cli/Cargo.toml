@@ -1,0 +1,24 @@
+[package]
+name = "wiretap-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "wiretap command-line tool."
+
+[[bin]]
+name = "wiretap"
+path = "src/main.rs"
+
+[dependencies]
+wiretap-core = { path = "../wiretap-core" }
+wiretap-sinks = { path = "../wiretap-sinks" }
+tokio.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+async-trait.workspace = true
