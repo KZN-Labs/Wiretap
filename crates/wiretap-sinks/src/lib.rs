@@ -39,10 +39,10 @@ pub trait Sink: Handler {
 // to keep the trait open for downstream coherence.)
 
 /// Build a sink from a `[sink]` config block. Returns a boxed Handler so the
-/// CLI can dispatch on `type` at runtime.
-pub fn build_from_config(
-    cfg: &wiretap_core::SinkConfig,
-) -> anyhow::Result<Box<dyn Handler>> {
+/// CLI can dispatch on `type` at runtime. Async because the postgres sink's
+/// connect is async — calling `block_on` here would deadlock under the tokio
+/// runtime the CLI already lives in.
+pub async fn build_from_config(cfg: &wiretap_core::SinkConfig) -> anyhow::Result<Box<dyn Handler>> {
     match cfg.kind.as_str() {
         #[cfg(feature = "sqlite")]
         "sqlite" => {
@@ -76,9 +76,7 @@ pub fn build_from_config(
                 .get("url")
                 .and_then(|v| v.as_str())
                 .ok_or_else(|| anyhow::anyhow!("[sink] type=postgres requires `url`"))?;
-            Ok(Box::new(futures::executor::block_on(
-                PostgresSink::connect(url),
-            )?))
+            Ok(Box::new(PostgresSink::connect(url).await?))
         }
         other => anyhow::bail!("unknown sink type `{other}`"),
     }

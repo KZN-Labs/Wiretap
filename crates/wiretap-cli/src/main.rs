@@ -1,16 +1,20 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+use std::sync::Arc;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
-use std::sync::Arc;
 use wiretap_core::{
     config::EXAMPLE_TOML, pipeline::Start, Config, Cursor, FilterSpec, GrpcLayoutProvider,
     GrpcSource, LayoutResolver, Pipeline, SinkConfig,
 };
 
 #[derive(Parser)]
-#[command(name = "wiretap", version, about = "Lightweight Sui gRPC event indexer")]
+#[command(
+    name = "wiretap",
+    version,
+    about = "Lightweight Sui gRPC event indexer"
+)]
 struct Cli {
     #[command(subcommand)]
     cmd: Cmd,
@@ -86,7 +90,10 @@ async fn main() -> Result<()> {
 
 fn cmd_init(out: PathBuf, force: bool) -> Result<()> {
     if out.exists() && !force {
-        anyhow::bail!("{} already exists (pass --force to overwrite)", out.display());
+        anyhow::bail!(
+            "{} already exists (pass --force to overwrite)",
+            out.display()
+        );
     }
     std::fs::write(&out, EXAMPLE_TOML).context("writing template")?;
     println!("wrote {}", out.display());
@@ -95,11 +102,7 @@ fn cmd_init(out: PathBuf, force: bool) -> Result<()> {
 
 /// Build a config-equivalent from CLI flags so `wiretap watch --endpoint ... --event ...
 /// --sink stdout` works with zero TOML.
-fn config_from_flags(
-    endpoint: String,
-    events: Vec<String>,
-    sink: String,
-) -> Result<Config> {
+fn config_from_flags(endpoint: String, events: Vec<String>, sink: String) -> Result<Config> {
     let sink_cfg = parse_sink_shorthand(&sink)?;
     Ok(Config {
         source: wiretap_core::SourceConfig {
@@ -132,7 +135,9 @@ fn parse_sink_shorthand(s: &str) -> Result<SinkConfig> {
     } else if s == "stdout" {
         "stdout"
     } else {
-        anyhow::bail!("unrecognized --sink `{s}` (use sqlite://, webhook://, postgres://, or stdout)");
+        anyhow::bail!(
+            "unrecognized --sink `{s}` (use sqlite://, webhook://, postgres://, or stdout)"
+        );
     };
     Ok(SinkConfig {
         kind: kind.into(),
@@ -148,8 +153,7 @@ fn load_config(
 ) -> Result<Config> {
     match (endpoint, sink) {
         (Some(ep), Some(sk)) => config_from_flags(ep, events, sk),
-        _ => Config::load(&config)
-            .with_context(|| format!("loading {}", config.display())),
+        _ => Config::load(&config).with_context(|| format!("loading {}", config.display())),
     }
 }
 
@@ -170,11 +174,14 @@ async fn cmd_watch(
     let mut filter = cfg.combined_filter();
     // CLI --event flags merge into config filters.
     filter.events.extend(events);
-    let handler = wiretap_sinks::build_from_config(&cfg.sink)?;
+    let handler = wiretap_sinks::build_from_config(&cfg.sink).await?;
 
     let start = match cfg.source.start_checkpoint.as_str() {
         "latest" => Start::Latest,
-        s => Start::At(s.parse().context("start_checkpoint must be \"latest\" or a u64")?),
+        s => Start::At(
+            s.parse()
+                .context("start_checkpoint must be \"latest\" or a u64")?,
+        ),
     };
 
     info!(
@@ -205,10 +212,10 @@ async fn cmd_backfill(
     ));
     let filter: FilterSpec = cfg.combined_filter();
     let compiled = filter.compile();
-    let handler = wiretap_sinks::build_from_config(&cfg.sink)?;
+    let handler = wiretap_sinks::build_from_config(&cfg.sink).await?;
 
-    use wiretap_core::source::Source;
     use wiretap_core::decode_event;
+    use wiretap_core::source::Source;
 
     info!(from, to, "wiretap: backfilling range");
     // Stream in pages to bound memory.

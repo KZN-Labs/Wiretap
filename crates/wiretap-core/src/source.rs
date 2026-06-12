@@ -28,9 +28,7 @@ pub trait Source: Send + Sync + 'static {
     /// no client-side start argument. To catch up from an earlier point, the
     /// pipeline calls [`Source::fetch_range`] for the backfill window before
     /// (or alongside) this stream.
-    async fn subscribe(
-        &self,
-    ) -> crate::Result<BoxStream<'static, crate::Result<CheckpointBatch>>>;
+    async fn subscribe(&self) -> crate::Result<BoxStream<'static, crate::Result<CheckpointBatch>>>;
 
     /// Fetch checkpoints [from, to] inclusive. Used for the initial catch-up
     /// before subscribe, for the gap fill after a reconnect, and for the

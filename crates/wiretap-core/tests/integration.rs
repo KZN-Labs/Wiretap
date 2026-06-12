@@ -17,7 +17,7 @@ use std::sync::{
 use tokio::sync::Mutex as AsyncMutex;
 use wiretap_core::layout::{LayoutProvider, LayoutResolver};
 use wiretap_core::proto::{
-    open_signature_body::Type as OpenType, Bcs, BalanceChange, Checkpoint, CheckpointSummary,
+    open_signature_body::Type as OpenType, BalanceChange, Bcs, Checkpoint, CheckpointSummary,
     DatatypeDescriptor, Event as ProtoEvent, ExecutedTransaction, FieldDescriptor,
     OpenSignatureBody, Transaction, TransactionEvents,
 };
@@ -106,12 +106,7 @@ impl Source for MockSource {
         &self,
     ) -> wiretap_core::Result<BoxStream<'static, wiretap_core::Result<CheckpointBatch>>> {
         self.subscribe_calls.fetch_add(1, Ordering::SeqCst);
-        let script = self
-            .scripts
-            .lock()
-            .unwrap()
-            .pop_front()
-            .unwrap_or_default();
+        let script = self.scripts.lock().unwrap().pop_front().unwrap_or_default();
         let items: Vec<wiretap_core::Result<CheckpointBatch>> = script
             .into_iter()
             .map(|c| Ok(CheckpointBatch { checkpoint: c }))
@@ -119,11 +114,7 @@ impl Source for MockSource {
         Ok(Box::pin(stream::iter(items)))
     }
 
-    async fn fetch_range(
-        &self,
-        from: u64,
-        to: u64,
-    ) -> wiretap_core::Result<Vec<CheckpointBatch>> {
+    async fn fetch_range(&self, from: u64, to: u64) -> wiretap_core::Result<Vec<CheckpointBatch>> {
         self.fetch_range_calls.fetch_add(1, Ordering::SeqCst);
         self.fetch_range_log.lock().unwrap().push((from, to));
         Ok((from..=to)
@@ -165,12 +156,18 @@ impl Handler for Collect {
 async fn filter_passes_only_matching_events() {
     let src = MockSource::default();
     src.push_script(vec![
-        cp(1, vec![
-            ("0xpkg::pool::SwapEvent", "0xpkg", "0xdeadbeef"),
-            ("0xpkg::farm::Harvest", "0xpkg", "0xdeadbeef"),
-        ]),
+        cp(
+            1,
+            vec![
+                ("0xpkg::pool::SwapEvent", "0xpkg", "0xdeadbeef"),
+                ("0xpkg::farm::Harvest", "0xpkg", "0xdeadbeef"),
+            ],
+        ),
         cp(2, vec![("0xother::nft::Mint", "0xother", "0xdeadbeef")]),
-        cp(3, vec![("0xpkg::pool::AddLiquidity", "0xpkg", "0xdeadbeef")]),
+        cp(
+            3,
+            vec![("0xpkg::pool::AddLiquidity", "0xpkg", "0xdeadbeef")],
+        ),
     ]);
 
     let cursor = Cursor::in_memory().unwrap();
@@ -199,7 +196,10 @@ async fn gap_backfill_on_reconnect() {
         cp(1, vec![("0xpkg::pool::SwapEvent", "0xpkg", "0xs")]),
         cp(2, vec![("0xpkg::pool::SwapEvent", "0xpkg", "0xs")]),
     ]);
-    src.push_script(vec![cp(5, vec![("0xpkg::pool::SwapEvent", "0xpkg", "0xs")])]);
+    src.push_script(vec![cp(
+        5,
+        vec![("0xpkg::pool::SwapEvent", "0xpkg", "0xs")],
+    )]);
 
     let cursor = Cursor::in_memory().unwrap();
     let filter = FilterSpec::default().with_event("0xpkg::pool::*");
@@ -276,9 +276,7 @@ async fn local_decode_when_server_json_absent() {
         defining_id: Some("0xabc".into()),
         module: Some("pool".into()),
         name: Some("Swap".into()),
-        kind: Some(
-            wiretap_core::proto::datatype_descriptor::DatatypeKind::Struct as i32,
-        ),
+        kind: Some(wiretap_core::proto::datatype_descriptor::DatatypeKind::Struct as i32),
         fields: vec![
             field("amount", prim(OpenType::U64)),
             field("ok", prim(OpenType::Bool)),
@@ -337,8 +335,12 @@ async fn local_decode_when_server_json_absent() {
         stop_after: 1,
         ..Default::default()
     };
-    let pipeline = Pipeline::new(src.clone(), Cursor::in_memory().unwrap(), FilterSpec::default())
-        .with_resolver(resolver);
+    let pipeline = Pipeline::new(
+        src.clone(),
+        Cursor::in_memory().unwrap(),
+        FilterSpec::default(),
+    )
+    .with_resolver(resolver);
     let _ = pipeline.run(collect.clone()).await;
 
     let events = collect.events.lock().await;

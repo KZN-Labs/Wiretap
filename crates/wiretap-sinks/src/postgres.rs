@@ -28,10 +28,7 @@ pub struct PostgresSink {
 
 impl PostgresSink {
     pub async fn connect(url: &str) -> anyhow::Result<Self> {
-        let pool = PgPoolOptions::new()
-            .max_connections(8)
-            .connect(url)
-            .await?;
+        let pool = PgPoolOptions::new().max_connections(8).connect(url).await?;
         sqlx::query(SCHEMA).execute(&pool).await?;
         Ok(Self { pool })
     }

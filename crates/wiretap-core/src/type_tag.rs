@@ -142,7 +142,10 @@ impl<'a> Parser<'a> {
                 self.bump(c);
                 Ok(())
             }
-            Some(c) => Err(ParseError::Unexpected { ch: c, pos: self.pos }),
+            Some(c) => Err(ParseError::Unexpected {
+                ch: c,
+                pos: self.pos,
+            }),
             None => Err(ParseError::Eof(self.pos)),
         }
     }
@@ -150,9 +153,7 @@ impl<'a> Parser<'a> {
     fn try_keyword(&mut self, kw: &'static str) -> bool {
         let rest = &self.src[self.pos..];
         let next = rest.as_bytes().get(kw.len()).copied();
-        if rest.starts_with(kw)
-            && next.map_or(true, |b| !is_ident_continue(b as char))
-        {
+        if rest.starts_with(kw) && next.map_or(true, |b| !is_ident_continue(b as char)) {
             self.pos += kw.len();
             true
         } else {
@@ -177,9 +178,7 @@ impl<'a> Parser<'a> {
     }
     fn parse_address(&mut self) -> Result<String, ParseError> {
         self.skip_ws();
-        if !self.src[self.pos..].starts_with("0x")
-            && !self.src[self.pos..].starts_with("0X")
-        {
+        if !self.src[self.pos..].starts_with("0x") && !self.src[self.pos..].starts_with("0X") {
             return Err(ParseError::Expected {
                 want: "0x-prefixed address",
                 pos: self.pos,
@@ -259,7 +258,12 @@ impl<'a> Parser<'a> {
                         self.bump('>');
                         break;
                     }
-                    Some(c) => return Err(ParseError::Unexpected { ch: c, pos: self.pos }),
+                    Some(c) => {
+                        return Err(ParseError::Unexpected {
+                            ch: c,
+                            pos: self.pos,
+                        })
+                    }
                     None => return Err(ParseError::Eof(self.pos)),
                 }
             }
@@ -309,8 +313,7 @@ mod tests {
 
     #[test]
     fn struct_with_generics() {
-        let t = TypeTag::parse("0xabc::pool::SwapEvent<0x2::sui::SUI, 0xdef::usdc::USDC>")
-            .unwrap();
+        let t = TypeTag::parse("0xabc::pool::SwapEvent<0x2::sui::SUI, 0xdef::usdc::USDC>").unwrap();
         let TypeTag::Struct(s) = t else { panic!() };
         assert_eq!(s.name, "SwapEvent");
         assert_eq!(s.type_params.len(), 2);
@@ -318,10 +321,7 @@ mod tests {
 
     #[test]
     fn nested_generics() {
-        let t = TypeTag::parse(
-            "0xabc::vault::Balance<0x2::coin::Coin<0x2::sui::SUI>>",
-        )
-        .unwrap();
+        let t = TypeTag::parse("0xabc::vault::Balance<0x2::coin::Coin<0x2::sui::SUI>>").unwrap();
         assert_eq!(
             t.to_string(),
             "0xabc::vault::Balance<0x2::coin::Coin<0x2::sui::SUI>>"

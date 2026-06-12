@@ -14,9 +14,8 @@
 //!     resolution cost exactly once.
 
 use crate::proto::{
-    move_package_service_client::MovePackageServiceClient,
-    open_signature_body::Type as OpenType, DatatypeDescriptor, GetDatatypeRequest,
-    OpenSignatureBody,
+    move_package_service_client::MovePackageServiceClient, open_signature_body::Type as OpenType,
+    DatatypeDescriptor, GetDatatypeRequest, OpenSignatureBody,
 };
 use crate::type_tag::{StructTag, TypeTag};
 use async_trait::async_trait;
@@ -164,10 +163,7 @@ impl LayoutResolver {
     ) -> Result<ResolvedLayout, LayoutError> {
         // s.package is already 0x-prefixed when produced by our parser; try
         // also the prefix-stripped form for providers that key without it.
-        let desc = match self
-            .fetch_descriptor(&s.package, &s.module, &s.name)
-            .await
-        {
+        let desc = match self.fetch_descriptor(&s.package, &s.module, &s.name).await {
             Ok(d) => d,
             Err(LayoutError::NotFound(..)) => {
                 let alt = s.package.strip_prefix("0x").unwrap_or(&s.package);
@@ -210,9 +206,7 @@ impl LayoutResolver {
         Box::pin(async move {
             const MAX_DEPTH: usize = 64;
             if depth > MAX_DEPTH {
-                return Err(LayoutError::RecursionLimit(
-                    "<open signature body>".into(),
-                ));
+                return Err(LayoutError::RecursionLimit("<open signature body>".into()));
             }
             match body.r#type() {
                 OpenType::Bool => Ok(ResolvedLayout::Bool),
@@ -225,10 +219,7 @@ impl LayoutResolver {
                 OpenType::Address => Ok(ResolvedLayout::Address),
                 OpenType::Vector => {
                     let inner = body.type_parameter_instantiation.first().ok_or_else(|| {
-                        LayoutError::Malformed(
-                            "vector".into(),
-                            "missing element type".into(),
-                        )
+                        LayoutError::Malformed("vector".into(), "missing element type".into())
                     })?;
                     let inner = self.resolve_body(inner, type_params, depth + 1).await?;
                     Ok(ResolvedLayout::Vector(Box::new(inner)))
@@ -243,8 +234,10 @@ impl LayoutResolver {
                     })?;
                     let mut nested_params = Vec::new();
                     for inst in &body.type_parameter_instantiation {
-                        nested_params
-                            .push(self.resolve_body_as_tag(inst, type_params, depth + 1).await?);
+                        nested_params.push(
+                            self.resolve_body_as_tag(inst, type_params, depth + 1)
+                                .await?,
+                        );
                     }
                     let s = StructTag {
                         package: with_0x(&pkg),
@@ -298,7 +291,9 @@ impl LayoutResolver {
                     let inner = body.type_parameter_instantiation.first().ok_or_else(|| {
                         LayoutError::Malformed("vector".into(), "missing element type".into())
                     })?;
-                    let inner = self.resolve_body_as_tag(inner, type_params, depth + 1).await?;
+                    let inner = self
+                        .resolve_body_as_tag(inner, type_params, depth + 1)
+                        .await?;
                     Ok(TypeTag::Vector(Box::new(inner)))
                 }
                 OpenType::Datatype => {
@@ -311,8 +306,10 @@ impl LayoutResolver {
                     })?;
                     let mut params = Vec::new();
                     for inst in &body.type_parameter_instantiation {
-                        params
-                            .push(self.resolve_body_as_tag(inst, type_params, depth + 1).await?);
+                        params.push(
+                            self.resolve_body_as_tag(inst, type_params, depth + 1)
+                                .await?,
+                        );
                     }
                     Ok(TypeTag::Struct(StructTag {
                         package: with_0x(&pkg),
@@ -345,10 +342,7 @@ fn classify_struct(s: &StructTag) -> StructKind {
         let b = u128::from_str_radix(want_hex, 16).ok();
         a.is_some() && a == b
     };
-    if is_addr("1")
-        && (s.module == "string" || s.module == "ascii")
-        && s.name == "String"
-    {
+    if is_addr("1") && (s.module == "string" || s.module == "ascii") && s.name == "String" {
         return StructKind::Utf8String;
     }
     if is_addr("2") && s.module == "object" && (s.name == "ID" || s.name == "UID") {
@@ -363,12 +357,18 @@ fn parse_qualified_name(s: &str) -> Option<(String, String, String)> {
     if parts.len() != 3 {
         return None;
     }
-    Some((parts[0].to_string(), parts[1].to_string(), parts[2].to_string()))
+    Some((
+        parts[0].to_string(),
+        parts[1].to_string(),
+        parts[2].to_string(),
+    ))
 }
 
 #[cfg(test)]
 fn strip_0x(s: &str) -> &str {
-    s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")).unwrap_or(s)
+    s.strip_prefix("0x")
+        .or_else(|| s.strip_prefix("0X"))
+        .unwrap_or(s)
 }
 
 fn with_0x(s: &str) -> String {
@@ -470,7 +470,12 @@ mod tests {
             r#type: Some(body),
         }
     }
-    fn datatype_struct(pkg: &str, m: &str, n: &str, fields: Vec<FieldDescriptor>) -> DatatypeDescriptor {
+    fn datatype_struct(
+        pkg: &str,
+        m: &str,
+        n: &str,
+        fields: Vec<FieldDescriptor>,
+    ) -> DatatypeDescriptor {
         DatatypeDescriptor {
             type_name: Some(format!("{pkg}::{m}::{n}")),
             defining_id: Some(pkg.into()),
@@ -491,7 +496,10 @@ mod tests {
                 "0xabc",
                 "pool",
                 "Swap",
-                vec![field("amount", prim(OpenType::U64)), field("ok", prim(OpenType::Bool))],
+                vec![
+                    field("amount", prim(OpenType::U64)),
+                    field("ok", prim(OpenType::Bool)),
+                ],
             ),
         );
         let r = LayoutResolver::new(Arc::new(mock), 16);

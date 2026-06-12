@@ -183,11 +183,7 @@ impl CompiledFilter {
     }
 }
 
-fn check_affected(
-    set: &HashSet<String>,
-    bloom: &Option<Bloom<String>>,
-    addr: &str,
-) -> bool {
+fn check_affected(set: &HashSet<String>, bloom: &Option<Bloom<String>>, addr: &str) -> bool {
     if let Some(b) = bloom {
         if !b.check(&addr.to_string()) {
             return false;
@@ -226,7 +222,9 @@ mod tests {
 
     #[test]
     fn exact_event_type() {
-        let f = FilterSpec::default().with_event("0x2::pool::SwapEvent").compile();
+        let f = FilterSpec::default()
+            .with_event("0x2::pool::SwapEvent")
+            .compile();
         assert!(f.matches(&tx(), &ev("0x2::pool::SwapEvent", "0x2", "0xs")));
         assert!(!f.matches(&tx(), &ev("0x2::pool::AddLiquidity", "0x2", "0xs")));
     }

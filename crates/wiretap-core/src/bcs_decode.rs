@@ -85,9 +85,7 @@ impl<'de, 'a> DeserializeSeed<'de> for Seed<'a> {
                     let addr = AddressBytes::deserialize(d)?;
                     Ok(Value::String(addr.hex()))
                 }
-                StructKind::Regular => {
-                    d.deserialize_tuple(fields.len(), StructVisitor { fields })
-                }
+                StructKind::Regular => d.deserialize_tuple(fields.len(), StructVisitor { fields }),
             },
         }
     }
@@ -184,7 +182,10 @@ mod tests {
                 name: tag.into(),
                 type_params: vec![],
             },
-            fields: fields.into_iter().map(|(n, l)| (n.to_string(), l)).collect(),
+            fields: fields
+                .into_iter()
+                .map(|(n, l)| (n.to_string(), l))
+                .collect(),
             kind,
         }
     }
@@ -210,7 +211,11 @@ mod tests {
 
     #[test]
     fn u64_emitted_as_string() {
-        let layout = s("T", vec![("amount", ResolvedLayout::U64)], StructKind::Regular);
+        let layout = s(
+            "T",
+            vec![("amount", ResolvedLayout::U64)],
+            StructKind::Regular,
+        );
         let bytes = bcs::to_bytes(&(u64::MAX,)).unwrap();
         let v = decode(&layout, &bytes).unwrap();
         assert_eq!(v["amount"], json!("18446744073709551615"));
@@ -218,13 +223,19 @@ mod tests {
 
     #[test]
     fn address_renders_as_hex() {
-        let layout = s("T", vec![("addr", ResolvedLayout::Address)], StructKind::Regular);
+        let layout = s(
+            "T",
+            vec![("addr", ResolvedLayout::Address)],
+            StructKind::Regular,
+        );
         let mut addr = [0u8; 32];
         addr[31] = 0x42;
         let bytes = bcs::to_bytes(&(addr,)).unwrap();
         let v = decode(&layout, &bytes).unwrap();
-        assert_eq!(v["addr"].as_str().unwrap(),
-            "0x0000000000000000000000000000000000000000000000000000000000000042");
+        assert_eq!(
+            v["addr"].as_str().unwrap(),
+            "0x0000000000000000000000000000000000000000000000000000000000000042"
+        );
     }
 
     #[test]
@@ -236,7 +247,10 @@ mod tests {
                 name: "String".into(),
                 type_params: vec![],
             },
-            fields: vec![("bytes".into(), ResolvedLayout::Vector(Box::new(ResolvedLayout::U8)))],
+            fields: vec![(
+                "bytes".into(),
+                ResolvedLayout::Vector(Box::new(ResolvedLayout::U8)),
+            )],
             kind: StructKind::Utf8String,
         };
         let bytes = bcs::to_bytes(&b"hello".to_vec()).unwrap();
@@ -246,7 +260,11 @@ mod tests {
 
     #[test]
     fn nested_struct_and_vector() {
-        let inner = s("Inner", vec![("v", ResolvedLayout::U16)], StructKind::Regular);
+        let inner = s(
+            "Inner",
+            vec![("v", ResolvedLayout::U16)],
+            StructKind::Regular,
+        );
         let outer = s(
             "Outer",
             vec![("items", ResolvedLayout::Vector(Box::new(inner)))],

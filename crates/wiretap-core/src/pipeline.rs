@@ -82,9 +82,7 @@ impl<S: Source> Pipeline<S> {
             let cursor = self.cursor.clone();
             let start = self.start;
             let base = self.reconnect_base;
-            tokio::spawn(async move {
-                producer_loop(source, cursor, start, base, tx).await
-            })
+            tokio::spawn(async move { producer_loop(source, cursor, start, base, tx).await })
         };
 
         let mut processed: u64 = 0;
@@ -101,14 +99,8 @@ impl<S: Source> Pipeline<S> {
                 };
                 for (i, ev) in events.iter().enumerate() {
                     if self.filter.matches(txn, ev) {
-                        let event = decode_event(
-                            cp,
-                            txn,
-                            ev,
-                            i as u64,
-                            self.resolver.as_deref(),
-                        )
-                        .await;
+                        let event =
+                            decode_event(cp, txn, ev, i as u64, self.resolver.as_deref()).await;
                         handler.on_event(event).await?;
                         matched += 1;
                     }
@@ -180,12 +172,14 @@ async fn producer_loop<S: Source>(
                 let mut cursor = begin;
                 while cursor <= tip {
                     let end = (cursor + CHUNK - 1).min(tip);
-                    let fill = source.fetch_range(cursor, end).await.map_err(|e| {
-                        Error::Backfill {
-                            checkpoint: cursor,
-                            source: Box::new(e),
-                        }
-                    })?;
+                    let fill =
+                        source
+                            .fetch_range(cursor, end)
+                            .await
+                            .map_err(|e| Error::Backfill {
+                                checkpoint: cursor,
+                                source: Box::new(e),
+                            })?;
                     for f in fill {
                         let seq = f.seq();
                         if tx.send(f).await.is_err() {
@@ -197,7 +191,9 @@ async fn producer_loop<S: Source>(
                 }
             }
             Ok(_) => {} // we're already past tip
-            Err(e) => warn!(error = %e, "wiretap: couldn't fetch tip for catch-up; will rely on subscribe"),
+            Err(e) => {
+                warn!(error = %e, "wiretap: couldn't fetch tip for catch-up; will rely on subscribe")
+            }
         }
     }
 
@@ -230,20 +226,27 @@ async fn producer_loop<S: Source>(
                 let expected = prev + 1;
                 if batch.seq() > expected {
                     let (from, to) = (expected, batch.seq() - 1);
-                    info!(from, to, "wiretap: backfilling gap via LedgerService.GetCheckpoint");
-                    let fill = source.fetch_range(from, to).await.map_err(|e| {
-                        Error::Backfill {
+                    info!(
+                        from,
+                        to, "wiretap: backfilling gap via LedgerService.GetCheckpoint"
+                    );
+                    let fill = source
+                        .fetch_range(from, to)
+                        .await
+                        .map_err(|e| Error::Backfill {
                             checkpoint: from,
                             source: Box::new(e),
-                        }
-                    })?;
+                        })?;
                     for f in fill {
                         if tx.send(f).await.is_err() {
                             return Ok(());
                         }
                     }
                 } else if batch.seq() < expected {
-                    debug!(skip = batch.seq(), "wiretap: skipping already-seen checkpoint");
+                    debug!(
+                        skip = batch.seq(),
+                        "wiretap: skipping already-seen checkpoint"
+                    );
                     continue;
                 }
             }

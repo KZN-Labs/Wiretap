@@ -11,8 +11,7 @@ fn main() -> anyhow::Result<()> {
     let proto_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("proto");
 
     // Point tonic-build at a vendored protoc instead of system PATH.
-    let protoc =
-        protoc_bin_vendored::protoc_bin_path().expect("vendored protoc binary present");
+    let protoc = protoc_bin_vendored::protoc_bin_path().expect("vendored protoc binary present");
     std::env::set_var("PROTOC", &protoc);
 
     let mut protos: Vec<PathBuf> = Vec::new();

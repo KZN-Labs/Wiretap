@@ -101,9 +101,7 @@ impl GrpcSource {
 
 #[async_trait]
 impl Source for GrpcSource {
-    async fn subscribe(
-        &self,
-    ) -> Result<BoxStream<'static, Result<CheckpointBatch>>> {
+    async fn subscribe(&self) -> Result<BoxStream<'static, Result<CheckpointBatch>>> {
         let mut client = self.sub_client();
         let req = SubscribeCheckpointsRequest {
             read_mask: Some(subscribe_read_mask()),

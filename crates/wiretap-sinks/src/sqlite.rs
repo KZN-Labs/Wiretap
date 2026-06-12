@@ -31,9 +31,7 @@ impl SqliteSink {
     pub fn open(path: impl AsRef<Path>) -> anyhow::Result<Self> {
         let conn = Connection::open(path)?;
         // Sensible defaults for an append-mostly event log.
-        conn.execute_batch(
-            "PRAGMA journal_mode = WAL;\nPRAGMA synchronous = NORMAL;",
-        )?;
+        conn.execute_batch("PRAGMA journal_mode = WAL;\nPRAGMA synchronous = NORMAL;")?;
         conn.execute_batch(SCHEMA)?;
         Ok(Self {
             conn: Mutex::new(conn),
