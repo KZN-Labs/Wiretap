@@ -1,3 +1,7 @@
+// Our `Error` enum is large because tonic::Status is large; boxing it would
+// touch every error site without a real benefit for an end-user crate.
+#![allow(clippy::result_large_err)]
+
 //! wiretap-core: streaming Sui event indexer building blocks.
 //!
 //! The minimum embed:
@@ -35,7 +39,11 @@ pub mod pipeline;
 pub mod source;
 pub mod type_tag;
 
-// tonic-generated proto types.
+// tonic-generated proto types. The generated code triggers a variety of
+// nuisance lints (large enum variants, doc-list indenting, …) that we can't
+// control from here — blanket-allow them on the generated module only.
+#[allow(clippy::all)]
+#[allow(rustdoc::all)]
 pub mod proto {
     pub mod google {
         pub mod rpc {

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Replace stub protos under crates/wiretap-core/proto/ with the upstream Sui
-# v2 protos at a pinned commit. Reproducible: bytes are identical for a given
-# (SUI_COMMIT, SUI_RPC_REV) pair.
+# Re-vendor crates/wiretap-core/proto/ from the upstream Sui v2 protos at a
+# pinned commit. Reproducible: bytes are identical for a given
+# (SUI_COMMIT, SUI_RPC_REV) pair. The pinned revs are recorded in
+# crates/wiretap-core/proto/REVISION after a successful run.
 #
 # The protos themselves live in MystenLabs/sui-rust-sdk (the MystenLabs/sui
 # workspace pulls them via a git dependency in its top-level Cargo.toml). We

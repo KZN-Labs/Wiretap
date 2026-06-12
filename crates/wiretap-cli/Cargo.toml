@@ -1,18 +1,24 @@
 [package]
-name = "wiretap-cli"
+name = "wiretap-sui"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "wiretap command-line tool."
+homepage.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Lightweight Sui gRPC event indexer — CLI. Streams filtered, decoded chain events with zero infrastructure."
+readme = "../../README.md"
+keywords = ["sui", "indexer", "grpc", "blockchain", "events"]
+categories = ["cryptography::cryptocurrencies", "command-line-utilities", "asynchronous"]
 
 [[bin]]
 name = "wiretap"
 path = "src/main.rs"
 
 [dependencies]
-wiretap-core = { path = "../wiretap-core" }
-wiretap-sinks = { path = "../wiretap-sinks" }
+wiretap-core = { path = "../wiretap-core", version = "0.1.0" }
+wiretap-sinks = { path = "../wiretap-sinks", version = "0.1.0" }
 tokio.workspace = true
 clap.workspace = true
 serde.workspace = true

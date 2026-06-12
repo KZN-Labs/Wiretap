@@ -21,7 +21,7 @@ handled.
 
 ## Features
 
-- **gRPC streaming** — `SubscribeCheckpoints` from Sui's v2beta2 fullnode API.
+- **gRPC streaming** — `SubscribeCheckpoints` from Sui's v2 fullnode API.
   Ordered, gapless delivery; reconnect with automatic gap backfill via
   `LedgerService.GetCheckpoint`.
 - **Cursor persistence** — sqlite (default) or file. At-least-once delivery,
@@ -38,23 +38,33 @@ handled.
 - **Sinks** — sqlite (zero setup), Postgres (feature flag), webhook (batched
   POST with exponential backoff), stdout NDJSON. Custom sinks via the
   `Handler` trait.
-- **No protoc required** — vendored protos compiled with the pure-Rust
-  `protox` crate at build time.
+- **No system protoc required** — the build uses a vendored `protoc`
+  binary (`protoc-bin-vendored`) at compile time.
 - **Library-first** — embed `wiretap-core` with your own handler in under
   20 lines (see below).
 
 ## Install
 
+Prebuilt binaries (Linux x86_64/aarch64, macOS x86_64/aarch64, Windows
+x86_64) ship on tagged releases:
+
 ```bash
-cargo install --path crates/wiretap-cli
+curl --proto '=https' --tlsv1.2 -LsSf \
+  https://github.com/Iwetan77/wiretap/releases/latest/download/wiretap-sui-installer.sh | sh
 ```
 
-Or build from source:
+From crates.io:
 
 ```bash
-git clone https://github.com/iwetan/wiretap
-cd wiretap && cargo build --release
-./target/release/wiretap --help
+cargo install wiretap-sui
+```
+
+From source:
+
+```bash
+git clone https://github.com/Iwetan77/wiretap
+cd wiretap && cargo install --path crates/wiretap-cli
+wiretap --help
 ```
 
 ## Quick start
@@ -104,7 +114,7 @@ filter shapes. Translate your existing JSON-RPC queries to `wiretap.toml`:
 | `{ "Sender": "0xADDR" }` | `senders = ["0xADDR"]` |
 | `{ "FromAddress": "0xADDR" }` | `senders = ["0xADDR"]` |
 | `{ "ToAddress": "0xADDR" }` | `affected = ["0xADDR"]` |
-| `{ "InputObject": "0xOBJ" }` | `affected = ["0xOBJ"]` *(treat as affected address; Sui v2beta2 surfaces touched object ids in the same list)* |
+| `{ "InputObject": "0xOBJ" }` | `affected = ["0xOBJ"]` *(addresses touched by the transaction; v2 surfaces these via balance changes + sender)* |
 | `{ "ChangedObject": "0xOBJ" }` | `affected = ["0xOBJ"]` |
 | `{ "All": [F1, F2] }` (AND) | combine keys inside a single `[[watch]]` block |
 | `{ "Any": [F1, F2] }` (OR) | use multiple `[[watch]]` blocks |
@@ -164,9 +174,10 @@ OR together.
 Three crates:
 
 - **`wiretap-core`** — `Source` trait, `GrpcSource`, `Cursor`,
-  `FilterEngine`, `Pipeline`, `Handler` trait.
+  `FilterEngine`, `LayoutResolver`, `Pipeline`, `Handler` trait.
 - **`wiretap-sinks`** — built-in sinks; opt-in via Cargo features.
-- **`wiretap-cli`** — `wiretap init | watch | backfill`.
+- **`wiretap-sui`** — the CLI crate. Installs as the `wiretap` binary
+  (`wiretap init | watch | backfill`).
 
 Hot path:
 
@@ -180,7 +191,7 @@ Sui fullnode gRPC
    FilterEngine  (compiled matchers + bloom for large lists)
         │
         ▼
-    Decoder  (proto → serde_json::Value, raw BCS preserved)
+    Decoder  (server json → local BCS decode via LayoutResolver → raw BCS preserved)
         │
         ▼
    Handler / Sink
@@ -189,29 +200,31 @@ Sui fullnode gRPC
    Cursor.commit(seq)   ← only after handler returns
 ```
 
-## Vendoring real Sui protos
+## Protos
 
-The crate ships minimal proto definitions matching the structural shape of
-Sui's v2beta2 API so the workspace builds and tests run with no external
-fetch. For production indexing against a live fullnode, replace them with
-the upstream protos:
+The `crates/wiretap-core/proto/` tree contains the upstream Sui v2 protos
+(plus their `google.protobuf` and `google.rpc` deps) vendored from
+[`MystenLabs/sui-rust-sdk`](https://github.com/MystenLabs/sui-rust-sdk).
+The exact rev — together with the `MystenLabs/sui` commit it was pinned
+through — is recorded in [`crates/wiretap-core/proto/REVISION`](crates/wiretap-core/proto/REVISION).
+
+To re-vendor (e.g. when bumping to a newer rev):
 
 ```bash
-./scripts/vendor-protos.sh   # fetches sui/crates/sui-rpc-api/proto/**
-cargo build
+./scripts/vendor-protos.sh         # pins from sui's main by default
+SUI_COMMIT=<sha> ./scripts/vendor-protos.sh
 ```
-
-See `scripts/vendor-protos.sh` for the exact commit pinned.
 
 ## Development
 
 ```bash
 cargo build              # build all crates
-cargo test               # unit + integration (uses MockSource, no network)
-cargo run -p wiretap-cli -- init
-cargo run -p wiretap-cli -- watch --endpoint ... --event ... --sink stdout
+cargo test               # unit + integration (uses a mock source, no network)
+cargo clippy --workspace -- -D warnings
+cargo run -p wiretap-sui -- init
+cargo run -p wiretap-sui -- watch --endpoint ... --event ... --sink stdout
 ```
 
 ## License
 
-Apache-2.0.
+Apache-2.0. See [LICENSE](LICENSE). Copyright 2026 Kaizen Labs.

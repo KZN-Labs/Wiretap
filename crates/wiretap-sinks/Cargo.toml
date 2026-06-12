@@ -4,7 +4,13 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Sinks for wiretap: sqlite (default), postgres (feature), webhook, stdout."
+homepage.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Sinks for wiretap: sqlite (default), postgres (feature), webhook, stdout NDJSON."
+readme = "../../README.md"
+keywords = ["sui", "indexer", "grpc", "blockchain", "events"]
+categories = ["cryptography::cryptocurrencies", "database", "asynchronous"]
 
 [features]
 default = ["sqlite", "webhook", "stdout"]
@@ -14,7 +20,7 @@ webhook = ["dep:reqwest"]
 stdout = []
 
 [dependencies]
-wiretap-core = { path = "../wiretap-core" }
+wiretap-core = { path = "../wiretap-core", version = "0.1.0" }
 tokio.workspace = true
 serde.workspace = true
 serde_json.workspace = true

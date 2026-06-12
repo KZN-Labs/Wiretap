@@ -256,9 +256,9 @@ impl LayoutResolver {
                 }
                 OpenType::Parameter => {
                     let idx = body.type_parameter.unwrap_or_default() as usize;
-                    let t = type_params.get(idx).ok_or_else(|| {
-                        LayoutError::TypeParamOob(idx as u32, type_params.len())
-                    })?;
+                    let t = type_params
+                        .get(idx)
+                        .ok_or(LayoutError::TypeParamOob(idx as u32, type_params.len()))?;
                     self.resolve_inner(t, depth + 1).await
                 }
                 OpenType::Unknown => Err(LayoutError::Malformed(
@@ -279,6 +279,12 @@ impl LayoutResolver {
         depth: usize,
     ) -> futures::future::BoxFuture<'a, Result<TypeTag, LayoutError>> {
         Box::pin(async move {
+            const MAX_DEPTH: usize = 64;
+            if depth > MAX_DEPTH {
+                return Err(LayoutError::RecursionLimit(
+                    "<open signature body, tag pass>".into(),
+                ));
+            }
             match body.r#type() {
                 OpenType::Bool => Ok(TypeTag::Bool),
                 OpenType::U8 => Ok(TypeTag::U8),

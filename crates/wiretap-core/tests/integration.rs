@@ -1,3 +1,5 @@
+#![allow(clippy::result_large_err, clippy::type_complexity)]
+
 //! End-to-end pipeline test using an in-process MockSource that scripts:
 //!   * canned checkpoints with events (real Sui v2 proto message shapes),
 //!   * a forced disconnect (stream end at a midpoint),
@@ -214,7 +216,7 @@ async fn gap_backfill_on_reconnect() {
 
     let log = src.fetch_range_log.lock().unwrap().clone();
     assert!(
-        log.iter().any(|&r| r == (3, 4)),
+        log.contains(&(3, 4)),
         "expected gap backfill of (3,4) via LedgerService.GetCheckpoint, got {log:?}"
     );
 }
@@ -372,7 +374,7 @@ async fn cursor_resume_drives_catch_up() {
 
     let log = src.fetch_range_log.lock().unwrap().clone();
     assert!(
-        log.iter().any(|&r| r == (101, 102)),
+        log.contains(&(101, 102)),
         "expected initial catch-up fetch_range(101,102), got {log:?}"
     );
 }

@@ -4,7 +4,13 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Lightweight Sui gRPC event indexer core: streaming source, cursor, filters, pipeline."
+homepage.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Lightweight Sui gRPC event indexer: streaming source, cursor, filters, layout-driven BCS decoder, and pipeline."
+readme = "../../README.md"
+keywords = ["sui", "indexer", "grpc", "blockchain", "events"]
+categories = ["cryptography::cryptocurrencies", "asynchronous", "api-bindings"]
 
 [dependencies]
 tokio.workspace = true

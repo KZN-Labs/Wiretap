@@ -3391,23 +3391,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wiretap-cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "clap",
- "serde",
- "serde_json",
- "tokio",
- "toml",
- "tracing",
- "tracing-subscriber",
- "wiretap-core",
- "wiretap-sinks",
-]
-
-[[package]]
 name = "wiretap-core"
 version = "0.1.0"
 dependencies = [
@@ -3451,6 +3434,23 @@ dependencies = [
  "tokio",
  "tracing",
  "wiretap-core",
+]
+
+[[package]]
+name = "wiretap-sui"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "clap",
+ "serde",
+ "serde_json",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "wiretap-core",
+ "wiretap-sinks",
 ]
 
 [[package]]
